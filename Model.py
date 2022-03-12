@@ -1,9 +1,43 @@
+## KPB: Deep Learning for Radiotherapy Dose Prediction of H&N Cancer 
+# @author: Alexander F.I. Osman, April 2021
+
+# This code demonstrates an attention U-Net model for dose prediction using OpenKBP AAPM-2020 dataset.
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import glob
+import tensorflow as tf
+import random
+from keras.models import load_model
+from sklearn.model_selection import train_test_split
 from keras.models import Model
 from keras.layers import Input, Conv3D, MaxPooling3D, concatenate, Conv3DTranspose, BatchNormalization, Dropout, Lambda
 from keras.optimizers import Adam
 import tensorflow as tf
 from tensorflow.keras import models, layers, regularizers
 from tensorflow.keras import backend as K
+
+###############################################################################
+# 1. LOAD DATA AND PREFORM PRE-PROCESSING #####################################
+###############################################################################
+
+combined_X = np.load('saved_data/combined_X.npy')
+combined_Y = np.load('saved_data/combined_Y.npy')
+
+X_train, X_test, Y_train, Y_test = train_test_split(combined_X, combined_Y, test_size=0.20, random_state=1)
+X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.20, random_state=1)
+
+###############################################################################
+# 2. BUILD THE MODEL ARCHITECTURE #############################################
+###############################################################################
+
+# For consistency
+# Since the neural network starts with random initial weights, the results of this
+# example will differ slightly every time it is run. The random seed is set to avoid
+# this randomness. However this is not necessary for your own applications.
+seed = 42
+np.random.seed = seed
 
 def conv_block(x, size, dropout):
     # Convolutional layer.
@@ -49,14 +83,12 @@ def attention_block(x, gating, inter_shape):
     result = layers.Conv3D(shape_x[4], (1, 1, 1), kernel_initializer='he_uniform', padding='same')(y)
     return result
 
-
 # Parameters for model
 img_height = X_train.shape[1]  # 64
 img_width = X_train.shape[2]  # 64
 img_depth = X_train.shape[3]  # 64
 img_channels = X_train.shape[4]  # 12
 input_shape = (img_height, img_width, img_depth, img_channels)
-
 
 def UNet_3D_Model(input_shape):
     # network structure
@@ -105,19 +137,10 @@ def UNet_3D_Model(input_shape):
     model.summary()
     return model
 
-
 # Test if everything is working ok.
 model = UNet_3D_Model(input_shape)
 print(model.input_shape)
 print(model.output_shape)
-
-# Parameters for model
-img_height = X_train.shape[1]  # 64
-img_width = X_train.shape[2]  # 64
-img_depth = X_train.shape[3]  # 64
-img_channels = X_train.shape[4]  # 12
-input_shape = (img_height, img_width, img_depth, img_channels)
-
 
 def Attention_UNet_3D_Model(input_shape):
     # network structure
@@ -186,8 +209,7 @@ print(model.output_shape)
 ###############################################################################
 
 # Fit the model
-
-epochs = 64
+epochs = 120
 batch_size = 4
 steps_per_epoch = len(X_train) // batch_size
 val_steps_per_epoch = len(X_val) // batch_size
@@ -196,11 +218,8 @@ loss = 'mean_squared_error'
 LR = 0.001
 optimizer = tf.keras.optimizers.Adam(LR)
 
-model = load_model('saved_model/UNet_best_model.epoch25-loss0.01.hdf5')
-#model = UNet_3D_Model(input_shape=input_shape)
-# model = Attention_UNet_3D_Model(input_shape=input_shape)
-# model = Res_UNet_3D_Model(input_shape=input_shape)
-# model = Attention_Res_UNet_3D_Model(input_shape=input_shape)
+# model = UNet_3D_Model(input_shape=input_shape)
+model = Attention_UNet_3D_Model(input_shape=input_shape)
 
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error', metrics=['accuracy', 'mae'])
 # model.compile(optimizer = optimizer, loss=loss, metrics=metrics)
@@ -213,11 +232,8 @@ early_stopping = tf.keras.callbacks.EarlyStopping(patience=30, monitor='val_loss
 # The patience parameter is the amount of epochs to check for improvement
 
 ## Checkpoint: ModelCheckpoint callback saves a model at some interval.
-#checkpoint_filepath = "saved_model/weights-improvement-{epoch:02d}-{val_loss:.2f}.hdf5"  # File name includes epoch and validation loss.
-checkpoint_filepath = 'saved_model/UNet_best_model.epoch{epoch:02d}-loss{val_loss:.2f}.hdf5'
-# checkpoint_filepath = 'saved_model/Att_UNet_best_model.epoch{epoch:02d}-loss{val_loss:.2f}.hdf5'
-# checkpoint_filepath = 'saved_model/Res_UNet_best_model.epoch{epoch:02d}-loss{val_loss:.2f}.hdf5'
-# checkpoint_filepath = 'saved_model/Att_Res_UNet_best_model.epoch{epoch:02d}-loss{val_loss:.2f}.hdf5'
+# checkpoint_filepath = 'saved_model/UNet_best_model.epoch{epoch:02d}-loss{val_loss:.2f}.hdf5'
+checkpoint_filepath = 'saved_model/Att_UNet_best_model.epoch{epoch:02d}-loss{val_loss:.2f}.hdf5'
 
 checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_filepath,
                                                 monitor='val_loss',
@@ -226,6 +242,18 @@ checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_filepath,
                                                 save_weights_only=False,
                                                 mode='min',  # #Use Mode = max for accuracy and min for loss.
                                                 )
+"""
+# Decaying learning rate
+reduce_lr = tf.keras.callbacks.callback_reduce_lr_on_plateau(
+    monitor = "val_loss", 
+    factor = 0.1, 
+    patience = 10, 
+    verbose = 0,
+    mode = c("auto", "min", "max"),
+    min_delta = 1e-04,
+    cooldown = 0,
+    min_lr = 0)
+"""
 ## CSVLogger logs epoch, acc, loss, val_acc, val_loss
 log_csv = tf.keras.callbacks.CSVLogger('my_logs.csv', separator=',', append=False)
 
@@ -251,3 +279,134 @@ print('total execution time in seconds is: ', finish - start)
 # print(history.history.keys())
 print('Training has been finished successfully')
 
+## Plot training history
+## LEARNING CURVE: plots the graph of the training loss vs.validation
+# loss over the number of epochs.
+def plot_history(history):
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('average training loss and validation loss')
+    plt.ylabel('mean-squared error')
+    plt.xlabel('epoch')
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(['training loss', 'validation loss'], loc='upper right')
+    plt.show()
+plot_history(history)
+
+# Save Model
+model.save('saved_model/dose_pred_Att_Unet3D_model_120epochs.hdf5')
+
+## Evaluating the model
+train_loss, train_acc, train_acc1 = model.evaluate(X_train, Y_train, batch_size = 8)
+val_loss, test_acc, train_acc2 = model.evaluate(X_val, Y_val, batch_size = 8)
+print('Train: %.3f, Test: %.3f' % (train_loss, val_loss))
+
+###############################################################################
+# 4. MAKE PREDICTIONS ON TEST DATASET #########################################
+###############################################################################
+
+# load test data >> for DVH plot and visualization
+X_test = np.load('saved_data/X_test.npy')
+Y_test = np.load('saved_data/Y_test.npy')
+
+# Set compile=False as we are not loading it for training, only for prediction.
+# Loading
+#new_model = load_model('saved_model/UNet_best_model.epoch113-loss0.00.hdf5')
+new_model = load_model('saved_model/Att_UNet_best_model.epoch112-loss0.00.hdf5')
+
+# Check its architecture
+new_model.summary()
+
+# Predict on the test set: Let us see how the model generalize by using the test set.
+predict_test = new_model.predict(X_test, verbose=1, batch_size = 4)
+
+#Processing the negative values
+predict_test2 = []
+for pt_id in range(len(X_test)):
+    print("pt_id: ", pt_id)
+    predict_test1 = predict_test[pt_id].astype('float32')
+    id1 = X_test[pt_id,:,:,:,0].astype(int)
+    predict_test1[predict_test1 <=0] = 0
+    predict_test2.append(np.array(predict_test1))
+predict_test2 = (np.array(predict_test2)).astype('float32')
+
+predict_test = predict_test2
+
+img_height = X_test.shape[1] # 64
+img_width = X_test.shape[2] # 64
+img_depth = X_test.shape[3] # 64
+img_channels = X_test.shape[4] # 1
+predict_test = np.reshape(predict_test, (len(predict_test), img_height, img_width, img_depth))
+real_test = np.reshape(Y_test, (len(Y_test), img_height, img_width, img_depth))
+
+# Renormalize the dose to original scale by multipying with the prescription (70 Gy)
+predict_test = predict_test * 70
+real_test = real_test * 70
+
+# Axial, Sagital, & Coronal views
+image_number = 42
+slice_number = 11
+fig = plt.figure()
+grid = plt.GridSpec(3, 4, wspace = .15, hspace = .15)
+exec (f"plt.subplot(grid{[0]})")
+plt.imshow(X_test[image_number,:,:,slice_number,11], cmap='gray')
+plt.title('ct'),
+plt.colorbar(), plt.axis('off')
+exec (f"plt.subplot(grid{[1]})")
+plt.imshow(predict_test[image_number,:,:,slice_number], cmap='jet')
+plt.title('Predicted Test'),
+plt.colorbar(), plt.axis('off')
+exec (f"plt.subplot(grid{[2]})")
+plt.imshow(real_test[image_number,:,:,slice_number], cmap='jet')
+plt.title('GT'),
+plt.colorbar(), plt.axis('off')
+exec (f"plt.subplot(grid{[3]})")
+plt.imshow((predict_test[image_number,:,:,slice_number] - real_test[image_number,:,:,slice_number]), cmap='jet')
+plt.title('residual'),
+plt.colorbar(label='Gy'), plt.axis('off')
+
+image_number = 51
+slice_number = 30
+exec (f"plt.subplot(grid{[4]})")
+plt.imshow(X_test[image_number,:,slice_number,:,11].T, cmap='gray')
+plt.title('ct'),
+plt.colorbar(), plt.axis('off')
+exec (f"plt.subplot(grid{[5]})")
+plt.imshow(predict_test[image_number,:,slice_number,:].T, cmap='jet')
+plt.title('Predicted Test'),
+plt.colorbar(), plt.axis('off')
+exec (f"plt.subplot(grid{[6]})")
+plt.imshow(real_test[image_number,:,slice_number,:].T, cmap='jet')
+plt.title('GT'),
+plt.colorbar(label='Gy'), plt.axis('off')
+exec (f"plt.subplot(grid{[7]})")
+plt.imshow((predict_test[image_number,:,slice_number,:] - real_test[image_number,:,slice_number,:]).T, cmap='jet')
+plt.title('residual'),
+plt.colorbar(label='Gy'), plt.axis('off')
+
+image_number = 51
+slice_number = 28
+exec (f"plt.subplot(grid{[8]})")
+plt.imshow(X_test[image_number,slice_number,:,:,11].T, cmap='gray')
+plt.title('ct'),
+plt.colorbar(), plt.axis('off')
+exec (f"plt.subplot(grid{[9]})")
+plt.imshow(predict_test[image_number,slice_number,:,:].T, cmap='jet')
+plt.title('Predicted Test'),
+plt.colorbar(label='Gy'), plt.axis('off')
+exec (f"plt.subplot(grid{[10]})")
+plt.imshow(real_test[image_number,slice_number,:,:].T, cmap='jet')
+plt.title('GT'),
+plt.axis('off')
+plt.colorbar(label='Gy')
+exec (f"plt.subplot(grid{[11]})")
+plt.imshow((predict_test[image_number,slice_number,:,:] - real_test[image_number,slice_number,:,:]).T, cmap='jet')
+plt.title('residual'),
+plt.axis('off')
+plt.colorbar(label='Gy')
+plt.show()
+
+###############################################################################
+###############################################################################

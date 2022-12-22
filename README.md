@@ -1,4 +1,4 @@
-# Attention-aware-3D-UNet-for-RT-dose-prediction
+# Attention-gated-3D-UNet-for-radiotherpay-dose-prediction
 We proposed a novel KBP model using an attention-gating mechanism and on a 3D U-Net architecture for voxel-wise dose prediction of head and neck radiotherapy plans. 
 
 # Availability of data and materials

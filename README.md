@@ -1,5 +1,5 @@
 # Attention-aware-3D-UNet-for-RT-dose-prediction
-We proposed a novel KBP model using an attention-gating mechanism and on a 3D U-Net architecture for intensity-modulated radiation therapy (IMRT) voxel-wise prediction in head and neck cancer. 
+We proposed a novel KBP model using an attention-gating mechanism and on a 3D U-Net architecture for intensity-modulated radiation therapy (IMRT) voxel-wise prediction for the head and neck cancer. 
 
 # Availability of data and materials
 The datasets can be found in the OpenKBP - 2020 AAPM Grand Challenge repository at https://competitions.codalab.org/competitions/23428. 

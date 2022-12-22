@@ -1,7 +1,12 @@
-## KPB: Deep Learning for Radiotherapy Dose Prediction of H&N Cancer 
+## KPB: Attention U-Net for accurate radiotherapy dose prediction 
 # @author: Alexander F.I. Osman, April 2021
 
-# This code demonstrates an attention U-Net model for dose prediction using OpenKBP AAPM-2020 dataset.
+"""
+This code demonstrates an attention U-Net model for voxel-wise dose prediction in radiation therapy.
+The model is trained, validated, and tested using the OpenKBP—2020 AAPM Grand Challenge dataset.
+"""
+
+##########################################################
 
 # Import libraries
 import numpy as np

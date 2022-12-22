@@ -1,5 +1,5 @@
 # Attention-aware-3D-UNet-for-RT-dose-prediction
-Purpose: Deep learning-based knowledge-based planning (KBP) methods have been introduced for radiotherapy dose distribution prediction to reduce the planning time and maintain consistent high-quality plans. This paper presents a novel KBP model using an attention-gating mechanism and a three-dimensional (3D) U-Net for intensity-modulated radiation therapy (IMRT) 3D dose distribution prediction in head and neck cancer. 
+We proposed a novel KBP model using an attention-gating mechanism and on a 3D U-Net architecture for intensity-modulated radiation therapy (IMRT) voxel-wise prediction in head and neck cancer. 
 
 # Availability of data and materials
 The datasets can be found in the OpenKBP - 2020 AAPM Grand Challenge repository at https://competitions.codalab.org/competitions/23428. 

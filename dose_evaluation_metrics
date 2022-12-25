@@ -1,1 +1,36 @@
+import numpy as np
+
+""" Mean Error """
+def mean_error(real, pred):
+    ME = np.subtract(np.array(real), np.array(pred)).mean()
+    ME_std = np.std(np.subtract(np.array(real), np.array(pred)))
+    return print("mean_error =", ME, "±", ME_std)
+
+
+""" Mean Absolute Error """
+def mean_abs_error(real, pred):
+    MAE = (np.abs(np.subtract(np.array(real), np.array(pred)))).mean()
+    MAE_std = np.std(np.abs(np.subtract(np.array(real), np.array(pred))))
+    return print("mean_abs_error =", MAE, "±", MAE_std)
+
+
+""" Mean-Squared Error """
+def mean_sqrd_error(real, pred):
+    MSE = np.square(np.subtract(np.array(real), np.array(pred))).mean()
+    MSE_std = np.std(np.square(np.subtract(np.array(real), np.array(pred))))
+    return print("mean_sqrd_error =", MSE, "±", MSE_std)
+
+
+""" Median Absolute Error """
+def median_abs_error(real, pred):
+    AE = np.abs(np.subtract(np.array(real), np.array(pred)))
+    MdAE = np.median(AE)
+    return print("median_abs_error =", MdAE)
+
+
+""" Mean Absolute Percentage Error """
+def mean_abs_percent_error(real, pred):
+    MAPE = np.abs(np.subtract(np.array(real), np.array(pred)) / np.array(real)).mean()
+    MAPE_std = np.std(np.abs(np.subtract(np.array(real), np.array(pred)) / np.array(real)))
+    return print("mean_abs_percent_error =", MAPE, "±", MAPE_std)
 
